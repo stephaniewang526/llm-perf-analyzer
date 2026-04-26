@@ -170,7 +170,8 @@ def _emit_time_range(lines: list[str], time_range: dict | None) -> None:
     lines.append(f"- **End**: {time_range.get('end', 'N/A')}")
     dur = time_range.get("duration_seconds")
     lines.append(f"- **Duration**: {format_duration(dur)}")
-    lines.append(f"- **Samples**: {time_range.get('samples', 'N/A'):,}")
+    samples = time_range.get("samples")
+    lines.append(f"- **Samples**: {samples:,}" if isinstance(samples, (int, float)) else "- **Samples**: N/A")
     lines.append("")
 
 

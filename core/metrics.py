@@ -61,7 +61,7 @@ def compute_deltas(values: Sequence[float]) -> np.ndarray:
     Returns an empty array when fewer than two values are provided.
     """
     arr = np.asarray(values, dtype=np.float64)
-    if len(arr) < 2:
+    if arr.size < 2:
         return np.array([], dtype=np.float64)
     deltas = np.diff(arr)
     np.maximum(deltas, 0, out=deltas)
@@ -98,22 +98,17 @@ def is_monotonic_increasing(
     return bool(arr[-1] > arr[0])
 
 
-def percentile(sorted_values: list[float], p: float) -> float:
-    """Compute the p-th percentile of a pre-sorted list using linear interpolation."""
-    if not sorted_values:
-        return 0.0
-    k = (len(sorted_values) - 1) * (p / 100.0)
-    f = math.floor(k)
-    c = math.ceil(k)
-    if f == c:
-        return sorted_values[int(k)]
-    return sorted_values[int(f)] * (c - k) + sorted_values[int(c)] * (k - f)
-
 
 def pct_change(baseline: float, current: float) -> float:
-    """Percentage change from *baseline* to *current*."""
+    """Percentage change from *baseline* to *current*.
+
+    When baseline is zero and current is nonzero, returns +inf or -inf
+    depending on the sign of current to preserve direction.
+    """
     if baseline == 0:
-        return 0.0 if current == 0 else float("inf")
+        if current == 0:
+            return 0.0
+        return float("inf") if current > 0 else float("-inf")
     return ((current - baseline) / abs(baseline)) * 100.0
 
 

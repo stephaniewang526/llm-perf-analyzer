@@ -13,7 +13,6 @@ from core.metrics import (
     format_number,
     is_monotonic_increasing,
     pct_change,
-    percentile,
 )
 
 
@@ -116,21 +115,6 @@ class TestIsMonotonicIncreasing:
         assert not is_monotonic_increasing(values)
 
 
-class TestPercentile:
-    def test_median(self):
-        assert percentile([1, 2, 3, 4, 5], 50) == 3.0
-
-    def test_p0_and_p100(self):
-        assert percentile([10, 20, 30], 0) == 10.0
-        assert percentile([10, 20, 30], 100) == 30.0
-
-    def test_empty_returns_zero(self):
-        assert percentile([], 50) == 0.0
-
-    def test_interpolation(self):
-        result = percentile([0, 10], 50)
-        assert result == pytest.approx(5.0)
-
 
 class TestPctChange:
     def test_increase(self):
@@ -145,8 +129,11 @@ class TestPctChange:
     def test_zero_baseline_zero_current(self):
         assert pct_change(0, 0) == 0.0
 
-    def test_zero_baseline_nonzero_current(self):
+    def test_zero_baseline_positive_current(self):
         assert pct_change(0, 100) == float("inf")
+
+    def test_zero_baseline_negative_current(self):
+        assert pct_change(0, -100) == float("-inf")
 
     def test_negative_baseline(self):
         assert pct_change(-100, -50) == pytest.approx(50.0)

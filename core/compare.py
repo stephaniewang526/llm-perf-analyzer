@@ -8,9 +8,9 @@ report generation or direct LLM consumption.
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
-from .metrics import compute_deltas, compute_stats, filter_sentinels, pct_change
+from .metrics import compute_deltas, compute_stats, filter_sentinels, is_monotonic_increasing, pct_change
 from .polarity import PolarityConfig, get_polarity, is_improvement, is_priority, is_regression
 
 
@@ -48,6 +48,13 @@ def build_comparison(
     p95_chg = pct_change(b_stats["p95"], c_stats["p95"])
     max_chg = pct_change(b_stats["max"], c_stats["max"])
 
+    # Clamp infinite values before computing severity so zero-baseline
+    # metrics don't unconditionally dominate the sort order.
+    _MAX_PCT = 1_000_000.0
+    mean_chg = max(-_MAX_PCT, min(_MAX_PCT, mean_chg))
+    p95_chg = max(-_MAX_PCT, min(_MAX_PCT, p95_chg))
+    max_chg = max(-_MAX_PCT, min(_MAX_PCT, max_chg))
+
     severity = abs(mean_chg) * 0.5 + abs(p95_chg) * 0.3 + abs(max_chg) * 0.2
     if priority:
         severity *= 2.0
@@ -71,7 +78,7 @@ def compare_metrics(
     current: dict[str, list[float]],
     config: PolarityConfig,
     threshold: float = 5.0,
-    key_filter: callable | None = None,
+    key_filter: Callable[[str], bool] | None = None,
     metric_types: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Compare two metric datasets and classify regressions/improvements.
@@ -88,8 +95,6 @@ def compare_metrics(
     Returns dict with keys: comparisons, significant, regressions,
     improvements, shared_keys, baseline_only, current_only.
     """
-    from .metrics import is_monotonic_increasing
-
     shared_keys = set(baseline) & set(current)
     baseline_only = set(baseline) - set(current)
     current_only = set(current) - set(baseline)

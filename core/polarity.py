@@ -62,24 +62,16 @@ class PolarityConfig:
 
 def get_polarity(key: str, config: PolarityConfig) -> str:
     """Return 'higher_is_better', 'lower_is_better', or 'neutral'."""
-    for prefix in config.higher_is_better:
-        if key.startswith(prefix):
-            return "higher_is_better"
-    for prefix in config.lower_is_better:
-        if key.startswith(prefix):
-            return "lower_is_better"
-    for prefix in config.neutral:
-        if key.startswith(prefix):
-            return "neutral"
+    if any(key.startswith(p) for p in config.higher_is_better):
+        return "higher_is_better"
+    if any(key.startswith(p) for p in config.lower_is_better):
+        return "lower_is_better"
     return "neutral"
 
 
 def is_priority(key: str, config: PolarityConfig) -> bool:
     """Return True if the metric matches a priority prefix."""
-    for prefix in config.priority_prefixes:
-        if key.startswith(prefix):
-            return True
-    return False
+    return any(key.startswith(p) for p in config.priority_prefixes)
 
 
 def is_regression(comparison: dict) -> bool:
