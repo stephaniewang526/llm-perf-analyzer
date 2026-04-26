@@ -7,7 +7,7 @@ over raw metric dumps.
 
 Supports two modes:
   - Summary: single dataset statistics
-  - Comparison: baseline vs candidate regression analysis
+  - Comparison: baseline vs current regression analysis
 """
 
 from __future__ import annotations
@@ -82,23 +82,23 @@ def generate_summary_report(
 
 def generate_comparison_report(
     baseline: dict[str, list[float]],
-    candidate: dict[str, list[float]],
+    current: dict[str, list[float]],
     config: PolarityConfig | None = None,
     threshold: float = 5.0,
     baseline_metadata: dict[str, Any] | None = None,
-    candidate_metadata: dict[str, Any] | None = None,
+    current_metadata: dict[str, Any] | None = None,
     top_n: int = 50,
     metric_types: dict[str, str] | None = None,
 ) -> str:
-    """Generate a structured comparison report: baseline vs candidate.
+    """Generate a structured comparison report: baseline vs current.
 
     Args:
         baseline: {metric_name: [values]} for the known-good run.
-        candidate: {metric_name: [values]} for the run under test.
+        current: {metric_name: [values]} for the run under test.
         config: polarity config. If None, all metrics are neutral.
         threshold: minimum % change to flag as significant.
         baseline_metadata: optional metadata for baseline.
-        candidate_metadata: optional metadata for candidate.
+        current_metadata: optional metadata for current.
         top_n: max metrics per section.
         metric_types: optional {metric_name: "counter"|"gauge"|...} from adapters
             that natively know the type. Overrides heuristic counter detection.
@@ -106,23 +106,23 @@ def generate_comparison_report(
     if config is None:
         config = PolarityConfig.empty()
     baseline_metadata = baseline_metadata or {}
-    candidate_metadata = candidate_metadata or {}
+    current_metadata = current_metadata or {}
 
-    result = compare_metrics(baseline, candidate, config, threshold,
+    result = compare_metrics(baseline, current, config, threshold,
                              metric_types=metric_types)
 
     lines: list[str] = []
 
     _emit_schema_header(lines, "comparison")
-    _emit_comparison_metadata(lines, baseline_metadata, candidate_metadata)
-    _emit_comparison_time_range(lines, baseline_metadata, candidate_metadata)
+    _emit_comparison_metadata(lines, baseline_metadata, current_metadata)
+    _emit_comparison_time_range(lines, baseline_metadata, current_metadata)
     _emit_verdict(lines, result, threshold)
     _emit_regressions(lines, result["regressions"], top_n)
     _emit_improvements(lines, result["improvements"], top_n)
-    _emit_schema_changes(lines, result["baseline_only"], result["candidate_only"], result["shared_keys"])
+    _emit_schema_changes(lines, result["baseline_only"], result["current_only"], result["shared_keys"])
     _emit_stable_priority(lines, result["comparisons"], threshold)
     _emit_full_comparison(lines, result["significant"], threshold)
-    _emit_data_sources(lines, candidate_metadata)
+    _emit_data_sources(lines, current_metadata)
 
     return "\n".join(lines)
 
@@ -177,19 +177,19 @@ def _emit_time_range(lines: list[str], time_range: dict | None) -> None:
 def _emit_comparison_metadata(
     lines: list[str],
     baseline_meta: dict[str, Any],
-    candidate_meta: dict[str, Any],
+    current_meta: dict[str, Any],
 ) -> None:
     lines.append("## Environment")
     lines.append("")
-    lines.append("| | Baseline | Candidate |")
-    lines.append("|---|----------|-----------|")
+    lines.append("| | Baseline | Current |")
+    lines.append("|---|----------|---------|")
     all_keys = list(dict.fromkeys(
         [k for k in baseline_meta if k != "time_range"]
-        + [k for k in candidate_meta if k != "time_range"]
+        + [k for k in current_meta if k != "time_range"]
     ))
     for k in all_keys:
         b_val = baseline_meta.get(k, "N/A")
-        c_val = candidate_meta.get(k, "N/A")
+        c_val = current_meta.get(k, "N/A")
         if b_val is not None and c_val is not None:
             lines.append(f"| {k} | {b_val} | {c_val} |")
     lines.append("")
@@ -198,16 +198,16 @@ def _emit_comparison_metadata(
 def _emit_comparison_time_range(
     lines: list[str],
     baseline_meta: dict[str, Any],
-    candidate_meta: dict[str, Any],
+    current_meta: dict[str, Any],
 ) -> None:
     b_tr = baseline_meta.get("time_range")
-    c_tr = candidate_meta.get("time_range")
+    c_tr = current_meta.get("time_range")
     if not b_tr and not c_tr:
         return
     lines.append("## Time Range")
     lines.append("")
-    lines.append("| | Baseline | Candidate |")
-    lines.append("|---|----------|-----------|")
+    lines.append("| | Baseline | Current |")
+    lines.append("|---|----------|---------|")
 
     def _get(tr, key, default="N/A"):
         return tr.get(key, default) if tr else default
@@ -238,16 +238,16 @@ def _emit_verdict(lines: list[str], result: dict, threshold: float) -> None:
 
     if regressions:
         lines.append(
-            "> **Action needed**: regressions detected in the candidate build. "
+            "> **Action needed**: regressions detected in the current build. "
             "See details below."
         )
     elif improvements:
         lines.append(
-            f"> **Candidate looks good**: no regressions detected; "
+            f"> **Current looks good**: no regressions detected; "
             f"{len(improvements)} metrics improved."
         )
     else:
-        lines.append("> **No significant change** between baseline and candidate.")
+        lines.append("> **No significant change** between baseline and current.")
     lines.append("")
 
 
@@ -256,14 +256,14 @@ def _emit_regressions(lines: list[str], regressions: list[dict], top_n: int) -> 
         return
     lines.append(f"## Regressions ({len(regressions)} metrics got worse)")
     lines.append("")
-    lines.append("| Metric | Category | Baseline Mean | Candidate Mean | Change | P95 Chg |")
-    lines.append("|--------|----------|--------------|----------------|--------|---------|")
+    lines.append("| Metric | Category | Baseline Mean | Current Mean | Change | P95 Chg |")
+    lines.append("|--------|----------|--------------|--------------|--------|---------|")
     for c in regressions[:top_n]:
         cat = polarity_label(c["polarity"])
         lines.append(
             f"| `{c['key']}` | {cat} "
             f"| {format_number(c['baseline']['mean'])} "
-            f"| {format_number(c['candidate']['mean'])} "
+            f"| {format_number(c['current']['mean'])} "
             f"| {c['mean_change_pct']:+.1f}% "
             f"| {c['p95_change_pct']:+.1f}% |"
         )
@@ -275,14 +275,14 @@ def _emit_improvements(lines: list[str], improvements: list[dict], top_n: int) -
         return
     lines.append(f"## Improvements ({len(improvements)} metrics got better)")
     lines.append("")
-    lines.append("| Metric | Category | Baseline Mean | Candidate Mean | Change | P95 Chg |")
-    lines.append("|--------|----------|--------------|----------------|--------|---------|")
+    lines.append("| Metric | Category | Baseline Mean | Current Mean | Change | P95 Chg |")
+    lines.append("|--------|----------|--------------|--------------|--------|---------|")
     for c in improvements[:top_n]:
         cat = polarity_label(c["polarity"])
         lines.append(
             f"| `{c['key']}` | {cat} "
             f"| {format_number(c['baseline']['mean'])} "
-            f"| {format_number(c['candidate']['mean'])} "
+            f"| {format_number(c['current']['mean'])} "
             f"| {c['mean_change_pct']:+.1f}% "
             f"| {c['p95_change_pct']:+.1f}% |"
         )
@@ -292,21 +292,21 @@ def _emit_improvements(lines: list[str], improvements: list[dict], top_n: int) -
 def _emit_schema_changes(
     lines: list[str],
     baseline_only: set[str],
-    candidate_only: set[str],
+    current_only: set[str],
     shared_keys: set[str],
 ) -> None:
-    if not baseline_only and not candidate_only:
+    if not baseline_only and not current_only:
         return
     lines.append("## Schema Changes")
     lines.append("")
     lines.append(f"- **Shared metrics**: {len(shared_keys)}")
-    lines.append(f"- **Removed in candidate**: {len(baseline_only)}")
-    lines.append(f"- **Added in candidate**: {len(candidate_only)}")
-    if candidate_only:
+    lines.append(f"- **Removed in current**: {len(baseline_only)}")
+    lines.append(f"- **Added in current**: {len(current_only)}")
+    if current_only:
         lines.append("")
-        lines.append("<details><summary>New metrics in candidate</summary>")
+        lines.append("<details><summary>New metrics in current</summary>")
         lines.append("")
-        for k in sorted(candidate_only)[:50]:
+        for k in sorted(current_only)[:50]:
             lines.append(f"- `{k}`")
         lines.append("")
         lines.append("</details>")
@@ -340,7 +340,7 @@ def _emit_stable_priority(
         lines.append(
             f"- `{c['key']}`: mean "
             f"{format_number(c['baseline']['mean'])} -> "
-            f"{format_number(c['candidate']['mean'])} "
+            f"{format_number(c['current']['mean'])} "
             f"({c['mean_change_pct']:+.1f}%)"
         )
     lines.append("")
@@ -358,11 +358,11 @@ def _emit_full_comparison(lines: list[str], significant: list[dict], threshold: 
             lines.append(
                 f"| `{c['key']}` | {cat} "
                 f"| {format_number(c['baseline']['mean'])} "
-                f"| {format_number(c['candidate']['mean'])} "
+                f"| {format_number(c['current']['mean'])} "
                 f"| {c['mean_change_pct']:+.1f}% "
                 f"| {v} "
                 f"| {format_number(c['baseline']['p95'])} "
-                f"| {format_number(c['candidate']['p95'])} "
+                f"| {format_number(c['current']['p95'])} "
                 f"| {c['p95_change_pct']:+.1f}% |"
             )
     lines.append("")

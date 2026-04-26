@@ -142,10 +142,10 @@ class TestPctChange:
     def test_no_change(self):
         assert pct_change(100, 100) == pytest.approx(0.0)
 
-    def test_zero_baseline_zero_candidate(self):
+    def test_zero_baseline_zero_current(self):
         assert pct_change(0, 0) == 0.0
 
-    def test_zero_baseline_nonzero_candidate(self):
+    def test_zero_baseline_nonzero_current(self):
         assert pct_change(0, 100) == float("inf")
 
     def test_negative_baseline(self):

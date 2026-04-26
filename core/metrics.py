@@ -110,11 +110,11 @@ def percentile(sorted_values: list[float], p: float) -> float:
     return sorted_values[int(f)] * (c - k) + sorted_values[int(c)] * (k - f)
 
 
-def pct_change(baseline: float, candidate: float) -> float:
-    """Percentage change from *baseline* to *candidate*."""
+def pct_change(baseline: float, current: float) -> float:
+    """Percentage change from *baseline* to *current*."""
     if baseline == 0:
-        return 0.0 if candidate == 0 else float("inf")
-    return ((candidate - baseline) / abs(baseline)) * 100.0
+        return 0.0 if current == 0 else float("inf")
+    return ((current - baseline) / abs(baseline)) * 100.0
 
 
 def format_number(n: float | int | None) -> str:

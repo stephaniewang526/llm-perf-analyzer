@@ -20,9 +20,9 @@ def simple_config():
 class TestBuildComparison:
     def test_gauge_comparison(self):
         baseline = [10.0, 12.0, 11.0, 13.0, 10.5] * 10
-        candidate = [20.0, 22.0, 21.0, 23.0, 20.5] * 10
+        current = [20.0, 22.0, 21.0, 23.0, 20.5] * 10
         result = build_comparison(
-            "throughput.ops", baseline, candidate,
+            "throughput.ops", baseline, current,
             is_counter=False, polarity="higher_is_better", priority=True,
         )
         assert result is not None
@@ -33,9 +33,9 @@ class TestBuildComparison:
 
     def test_counter_comparison(self):
         baseline = list(range(0, 1000, 10))
-        candidate = list(range(0, 2000, 20))
+        current = list(range(0, 2000, 20))
         result = build_comparison(
-            "ops.total", baseline, candidate,
+            "ops.total", baseline, current,
             is_counter=True, polarity="higher_is_better", priority=False,
         )
         assert result is not None
@@ -72,44 +72,44 @@ class TestBuildComparison:
 class TestCompareMetrics:
     def test_detects_regression(self, simple_config):
         baseline = {"throughput.ops": [100.0] * 50}
-        candidate = {"throughput.ops": [50.0] * 50}  # throughput halved
-        result = compare_metrics(baseline, candidate, simple_config, threshold=5.0)
+        current = {"throughput.ops": [50.0] * 50}  # throughput halved.
+        result = compare_metrics(baseline, current, simple_config, threshold=5.0)
         assert len(result["regressions"]) == 1
         assert result["regressions"][0]["key"] == "throughput.ops"
 
     def test_detects_improvement(self, simple_config):
         baseline = {"latency.p99": [100.0] * 50}
-        candidate = {"latency.p99": [50.0] * 50}  # latency halved = good
-        result = compare_metrics(baseline, candidate, simple_config, threshold=5.0)
+        current = {"latency.p99": [50.0] * 50}  # latency halved = good.
+        result = compare_metrics(baseline, current, simple_config, threshold=5.0)
         assert len(result["improvements"]) == 1
         assert result["improvements"][0]["key"] == "latency.p99"
 
     def test_stable_within_threshold(self, simple_config):
         baseline = {"throughput.ops": [100.0] * 50}
-        candidate = {"throughput.ops": [101.0] * 50}  # ~1% change
-        result = compare_metrics(baseline, candidate, simple_config, threshold=5.0)
+        current = {"throughput.ops": [101.0] * 50}  # ~1% change.
+        result = compare_metrics(baseline, current, simple_config, threshold=5.0)
         assert len(result["regressions"]) == 0
         assert len(result["improvements"]) == 0
         assert len(result["significant"]) == 0
 
     def test_tracks_added_removed_metrics(self, simple_config):
         baseline = {"throughput.ops": [100.0] * 50, "old.metric": [1.0] * 50}
-        candidate = {"throughput.ops": [100.0] * 50, "new.metric": [1.0] * 50}
-        result = compare_metrics(baseline, candidate, simple_config, threshold=5.0)
+        current = {"throughput.ops": [100.0] * 50, "new.metric": [1.0] * 50}
+        result = compare_metrics(baseline, current, simple_config, threshold=5.0)
         assert "old.metric" in result["baseline_only"]
-        assert "new.metric" in result["candidate_only"]
+        assert "new.metric" in result["current_only"]
 
     def test_key_filter(self, simple_config):
         baseline = {
             "throughput.ops": [100.0] * 50,
             "latency.p99": [100.0] * 50,
         }
-        candidate = {
+        current = {
             "throughput.ops": [50.0] * 50,
             "latency.p99": [200.0] * 50,
         }
         result = compare_metrics(
-            baseline, candidate, simple_config, threshold=5.0,
+            baseline, current, simple_config, threshold=5.0,
             key_filter=lambda k: "throughput" in k,
         )
         assert len(result["comparisons"]) == 1
@@ -120,11 +120,11 @@ class TestCompareMetrics:
             "throughput.a": [100.0] * 50,
             "throughput.b": [100.0] * 50,
         }
-        candidate = {
-            "throughput.a": [50.0] * 50,   # -50%
-            "throughput.b": [90.0] * 50,   # -10%
+        current = {
+            "throughput.a": [50.0] * 50,   # -50%.
+            "throughput.b": [90.0] * 50,   # -10%.
         }
-        result = compare_metrics(baseline, candidate, simple_config, threshold=5.0)
+        result = compare_metrics(baseline, current, simple_config, threshold=5.0)
         assert len(result["comparisons"]) == 2
         assert result["comparisons"][0]["key"] == "throughput.a"  # higher severity first
 

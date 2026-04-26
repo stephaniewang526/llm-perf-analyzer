@@ -17,12 +17,12 @@ python3 analyze.py summary tests/fixtures/sample_perf_test_items.json
 # Summarize Prometheus metrics
 python3 analyze.py summary --adapter prometheus /path/to/metrics.txt
 
-# Compare baseline vs candidate for regression detection
-python3 analyze.py compare baseline.json candidate.json
+# Compare baseline vs current for regression detection
+python3 analyze.py compare baseline.json current.json
 
 # With a polarity config (teaches the tool which direction is "good")
 python3 analyze.py compare --polarity-config configs/web_app.yaml \
-  tests/fixtures/baseline.json tests/fixtures/candidate.json -o /tmp/compare.md
+  tests/fixtures/baseline.json tests/fixtures/current.json -o /tmp/compare.md
 ```
 
 Inspect the generated markdown for the **schema** header, **Overall Verdict** (in compare mode), and **Regressions** tables. For agent-oriented usage, see `SKILL.md`.
@@ -32,7 +32,7 @@ Inspect the generated markdown for the **schema** header, **Overall Verdict** (i
 1. **Reads** metric data through **pluggable adapters** (JSON and Prometheus are built in; others can follow the same `dict[str, list[float]]` contract)
 2. **Computes** statistics: mean, median, p95, p99, stddev, min, max
 3. **Classifies** each metric's polarity: higher-is-better (throughput) vs lower-is-better (latency/cost)
-4. **Detects** regressions and improvements by comparing baseline vs candidate
+4. **Detects** regressions and improvements by comparing baseline vs current
 5. **Generates** a structured markdown report with schema version, tables, and verdicts
 
 The output is designed for LLM consumption: predictable sections, consistent table formats, and explicit polarity annotations so the AI knows what "worse" means for each metric.
@@ -141,7 +141,7 @@ Parses the standard [Prometheus exposition format](https://prometheus.io/docs/in
 python3 analyze.py summary <file> [--adapter json|prometheus] [--polarity-config <yaml>] [--top N] [-o output.md]
 
 # Comparison mode
-python3 analyze.py compare <baseline> <candidate> [--adapter json|prometheus] [--polarity-config <yaml>] [--threshold 5.0] [--top N] [-o output.md]
+python3 analyze.py compare <baseline> <current> [--adapter json|prometheus] [--polarity-config <yaml>] [--threshold 5.0] [--top N] [-o output.md]
 ```
 
 | Flag | Default | Description |

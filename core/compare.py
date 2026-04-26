@@ -1,5 +1,5 @@
 """
-Regression detection: compare baseline vs candidate metric datasets.
+Regression detection: compare baseline vs current metric datasets.
 
 Accepts generic metric dicts ({metric_name: [values, ...]}) and a
 PolarityConfig, producing structured comparison results suitable for
@@ -17,7 +17,7 @@ from .polarity import PolarityConfig, get_polarity, is_improvement, is_priority,
 def build_comparison(
     key: str,
     baseline_values: Sequence[float],
-    candidate_values: Sequence[float],
+    current_values: Sequence[float],
     is_counter: bool,
     polarity: str,
     priority: bool,
@@ -27,7 +27,7 @@ def build_comparison(
     Returns None if either side has no usable data after filtering/rates.
     """
     b_vals = filter_sentinels(baseline_values)
-    c_vals = filter_sentinels(candidate_values)
+    c_vals = filter_sentinels(current_values)
     if len(b_vals) == 0 or len(c_vals) == 0:
         return None
 
@@ -57,7 +57,7 @@ def build_comparison(
         "type": metric_type,
         "polarity": polarity,
         "baseline": b_stats,
-        "candidate": c_stats,
+        "current": c_stats,
         "mean_change_pct": mean_chg,
         "p95_change_pct": p95_chg,
         "max_change_pct": max_chg,
@@ -68,7 +68,7 @@ def build_comparison(
 
 def compare_metrics(
     baseline: dict[str, list[float]],
-    candidate: dict[str, list[float]],
+    current: dict[str, list[float]],
     config: PolarityConfig,
     threshold: float = 5.0,
     key_filter: callable | None = None,
@@ -78,7 +78,7 @@ def compare_metrics(
 
     Args:
         baseline: {metric_name: [values]} for the known-good run.
-        candidate: {metric_name: [values]} for the run under test.
+        current: {metric_name: [values]} for the run under test.
         config: PolarityConfig defining metric directions and counter prefixes.
         threshold: minimum % change to flag as significant.
         key_filter: optional callable(key) -> bool to include/exclude metrics.
@@ -86,13 +86,13 @@ def compare_metrics(
             that natively know the type. Overrides heuristic counter detection.
 
     Returns dict with keys: comparisons, significant, regressions,
-    improvements, shared_keys, baseline_only, candidate_only.
+    improvements, shared_keys, baseline_only, current_only.
     """
     from .metrics import is_monotonic_increasing
 
-    shared_keys = set(baseline) & set(candidate)
-    baseline_only = set(baseline) - set(candidate)
-    candidate_only = set(candidate) - set(baseline)
+    shared_keys = set(baseline) & set(current)
+    baseline_only = set(baseline) - set(current)
+    current_only = set(current) - set(baseline)
 
     comparisons: list[dict[str, Any]] = []
     for key in sorted(shared_keys):
@@ -100,7 +100,7 @@ def compare_metrics(
             continue
 
         b_values = baseline[key]
-        c_values = candidate[key]
+        c_values = current[key]
 
         if metric_types and key in metric_types:
             counter = metric_types[key] == "counter"
@@ -135,6 +135,6 @@ def compare_metrics(
         "improvements": improvements,
         "shared_keys": shared_keys,
         "baseline_only": baseline_only,
-        "candidate_only": candidate_only,
+        "current_only": current_only,
         "threshold": threshold,
     }

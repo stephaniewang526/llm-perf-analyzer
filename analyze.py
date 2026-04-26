@@ -9,8 +9,8 @@ Usage:
   # Summary from Prometheus metrics
   python3 analyze.py summary --adapter prometheus /path/to/metrics.txt
 
-  # Compare baseline vs candidate (JSON or Prometheus)
-  python3 analyze.py compare baseline.json candidate.json
+  # Compare baseline vs current (JSON or Prometheus)
+  python3 analyze.py compare baseline.json current.json
 
   # With custom polarity config
   python3 analyze.py summary --polarity-config configs/web_app.yaml data.json
@@ -72,27 +72,27 @@ def cmd_summary(args: argparse.Namespace) -> None:
 
 def cmd_compare(args: argparse.Namespace) -> None:
     _check_file(args.baseline)
-    _check_file(args.candidate)
+    _check_file(args.current)
     read_fn = _load_adapter(args.adapter)
     config = _load_polarity_config(args.polarity_config)
 
     from core.report import generate_comparison_report
 
     baseline_data = read_fn(args.baseline)
-    candidate_data = read_fn(args.candidate)
+    current_data = read_fn(args.current)
 
     combined_types = {
         **(baseline_data.get("metric_types") or {}),
-        **(candidate_data.get("metric_types") or {}),
+        **(current_data.get("metric_types") or {}),
     }
 
     report = generate_comparison_report(
         baseline=baseline_data["metrics"],
-        candidate=candidate_data["metrics"],
+        current=current_data["metrics"],
         config=config,
         threshold=args.threshold,
         baseline_metadata=baseline_data.get("metadata"),
-        candidate_metadata=candidate_data.get("metadata"),
+        current_metadata=current_data.get("metadata"),
         top_n=args.top,
         metric_types=combined_types if combined_types else None,
     )
@@ -148,9 +148,9 @@ def main() -> None:
     sp.add_argument("path", help="Path to metrics file")
     _add_common_args(sp)
 
-    cp = subparsers.add_parser("compare", help="Compare baseline vs candidate")
+    cp = subparsers.add_parser("compare", help="Compare baseline vs current")
     cp.add_argument("baseline", help="Path to baseline metrics file")
-    cp.add_argument("candidate", help="Path to candidate metrics file")
+    cp.add_argument("current", help="Path to current metrics file")
     cp.add_argument(
         "--threshold",
         type=float,

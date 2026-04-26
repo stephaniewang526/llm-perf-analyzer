@@ -3,7 +3,7 @@ name: perf-analysis
 description: >-
   Analyze performance metrics, detect regressions, and generate structured
   reports from JSON or Prometheus data. Use when the user provides metric files,
-  asks about performance regressions, wants to compare baseline vs candidate
+  asks about performance regressions, wants to compare baseline vs current
   runs, or needs help interpreting observability data.
 when_to_use: performance analysis, regression detection, metric comparison, observability data interpretation
 license: Apache-2.0
@@ -32,7 +32,7 @@ Determine what the user has:
 | Nested perf-test JSON (array of `info` + `metrics` items) | Use JSON adapter directly (default) |
 | Generic JSON metrics | Use JSON adapter directly (auto-detects format) |
 | Prometheus metrics.txt | Use `--adapter prometheus` |
-| Two metric files (baseline + candidate) | Run comparison mode |
+| Two metric files (baseline + current) | Run comparison mode |
 | A directory of metric files | Ask which files to analyze |
 | No data yet, just questions | Help them export metrics (see Appendix) |
 
@@ -48,14 +48,14 @@ python3 analyze.py summary --adapter prometheus /path/to/metrics.txt
 **Comparison (regression detection):**
 
 ```bash
-python3 analyze.py compare baseline.json candidate.json --threshold 5.0
+python3 analyze.py compare baseline.json current.json --threshold 5.0
 ```
 
 **With polarity config (teaches the tool which direction is "good"):**
 
 ```bash
 python3 analyze.py summary data.json --polarity-config configs/my_app.yaml
-python3 analyze.py compare baseline.json candidate.json --polarity-config configs/my_app.yaml
+python3 analyze.py compare baseline.json current.json --polarity-config configs/my_app.yaml
 ```
 
 If no polarity config is provided, all metrics are treated as neutral
@@ -78,7 +78,7 @@ Start here. It tells you:
 - Whether action is needed
 
 If `regressions > 0`, dig into the Regressions table.
-If `No significant change`, the candidate is safe.
+If `No significant change`, the current build is safe.
 
 #### Regressions table
 
@@ -102,7 +102,7 @@ in other areas.
 #### Stable Priority Metrics
 
 Key metrics that did NOT change. This is important context -- it tells
-you what the candidate did NOT break.
+you what the current build did NOT break.
 
 ### Step 4 -- Create a polarity config (if needed)
 
@@ -181,7 +181,7 @@ summary, using a "Red Flags" or "Warnings" heading.
    - Latency spikes + disk I/O up = storage-bound
    - All latencies up proportionally = upstream dependency or network issue
 4. **What should they investigate?** Specific areas to look at
-5. **Is the candidate safe to ship?** Clear recommendation
+5. **Is the current build safe to ship?** Clear recommendation
 
 ## Input Format Reference
 
@@ -226,7 +226,7 @@ Export JSON in the nested perf-test shape (array of objects with `info` and
 
 ```bash
 python3 analyze.py summary perf_results.json
-python3 analyze.py compare baseline.json candidate.json
+python3 analyze.py compare baseline.json current.json
 ```
 
 ### From Splunk / Datadog / Grafana
