@@ -26,7 +26,7 @@ python3 analyze.py compare --polarity-config configs/web_app.yaml baseline.json 
 
 ## What it does
 
-1. **Reads** metric data from JSON (nested perf-test exports, time-series rows, generic shapes) or Prometheus exposition format
+1. **Reads** metric data through **pluggable adapters** (JSON and Prometheus are built in; others can follow the same `dict[str, list[float]]` contract)
 2. **Computes** statistics: mean, median, p95, p99, stddev, min, max
 3. **Classifies** each metric's polarity: higher-is-better (throughput) vs lower-is-better (latency/cost)
 4. **Detects** regressions and improvements by comparing baseline vs candidate
@@ -44,7 +44,7 @@ Input Adapters (pluggable)        Core Engine (generic)              Output
                                   report.py    (report generator)
 ```
 
-All core engine code operates on a common format: `dict[str, list[float]]` mapping metric names to value arrays. Adapters convert source-specific formats into this common representation.
+All core engine code operates on a common format: `dict[str, list[float]]` mapping metric names to value arrays. Adapters convert source-specific formats into this common representation. New formats belong in `adapters/` plus a CLI hook in `analyze.py`; the core engine stays unchanged.
 
 Adapters that natively know metric types (like Prometheus `# TYPE` annotations or JSON `improvement_direction` fields) pass that information through so the engine uses declared types instead of heuristic counter detection.
 

@@ -1,7 +1,7 @@
 [project]
 name = "llm-perf-analyzer"
 version = "0.1.0"
-description = "Transform raw observability metrics into structured, LLM-consumable performance reports"
+description = "LLM-friendly perf report generator via pluggable adapters (Prometheus, JSON, etc.)"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
