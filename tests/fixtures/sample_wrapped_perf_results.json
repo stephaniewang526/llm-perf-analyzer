@@ -1,0 +1,31 @@
+{
+  "id": {
+    "project": "nightly-perf",
+    "variant": "linux-amd64",
+    "task_name": "benchmark.load_read_scan",
+    "version": "build_abc123"
+  },
+  "results": [
+    {
+      "info": {
+        "test_name": "api_read_load",
+        "trial": 0,
+        "arguments": {"concurrency": 128}
+      },
+      "created_at": "2026-04-03T14:22:14+00:00",
+      "completed_at": "2026-04-03T14:27:38+00:00",
+      "metrics": [
+        {
+          "name": "ops_per_sec",
+          "value": 2912.88,
+          "metadata": {"improvement_direction": "up"}
+        },
+        {
+          "name": "average_read_latency_us",
+          "value": 43903.47,
+          "metadata": {"improvement_direction": "down"}
+        }
+      ]
+    }
+  ]
+}

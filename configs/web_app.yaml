@@ -1,0 +1,37 @@
+# Example polarity config for a typical web application.
+# Use as a starting point and customize for your own metrics.
+
+higher_is_better:
+  - throughput.
+  - ops_per_sec
+  - requests_per_second
+  - http_requests_total
+
+lower_is_better:
+  - latency.
+  - duration
+  - p99
+  - p95
+  - error_rate
+  - cpu.usage
+  - cpu_usage
+  - memory_bytes
+
+neutral:
+  - connections.current
+  - version
+
+priority_prefixes:
+  - throughput.
+  - ops_per_sec
+  - latency.
+  - p99
+  - error_rate
+  - http_requests_total
+  - cpu.usage
+  - cpu_usage
+
+counter_prefixes:
+  - http_requests_total
+  - bytes_sent_total
+  - requests_total

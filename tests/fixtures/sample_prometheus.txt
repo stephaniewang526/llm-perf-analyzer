@@ -1,0 +1,46 @@
+# HELP http_requests_total Total HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{method="GET",code="200"} 100 1700000000000
+http_requests_total{method="GET",code="200"} 150 1700000001000
+http_requests_total{method="GET",code="200"} 220 1700000002000
+http_requests_total{method="GET",code="200"} 310 1700000003000
+http_requests_total{method="GET",code="200"} 400 1700000004000
+http_requests_total{method="POST",code="200"} 10 1700000000000
+http_requests_total{method="POST",code="200"} 15 1700000001000
+http_requests_total{method="POST",code="200"} 22 1700000002000
+http_requests_total{method="POST",code="200"} 31 1700000003000
+http_requests_total{method="POST",code="200"} 40 1700000004000
+# HELP cpu_usage_percent Current CPU usage
+# TYPE cpu_usage_percent gauge
+cpu_usage_percent 45.2 1700000000000
+cpu_usage_percent 47.8 1700000001000
+cpu_usage_percent 52.1 1700000002000
+cpu_usage_percent 49.3 1700000003000
+cpu_usage_percent 46.7 1700000004000
+# HELP request_duration_seconds Duration of HTTP requests
+# TYPE request_duration_seconds histogram
+request_duration_seconds_bucket{le="0.01"} 50 1700000000000
+request_duration_seconds_bucket{le="0.05"} 80 1700000000000
+request_duration_seconds_bucket{le="0.1"} 95 1700000000000
+request_duration_seconds_bucket{le="+Inf"} 100 1700000000000
+request_duration_seconds_sum 8.5 1700000000000
+request_duration_seconds_count 100 1700000000000
+request_duration_seconds_bucket{le="0.01"} 75 1700000001000
+request_duration_seconds_bucket{le="0.05"} 120 1700000001000
+request_duration_seconds_bucket{le="0.1"} 145 1700000001000
+request_duration_seconds_bucket{le="+Inf"} 150 1700000001000
+request_duration_seconds_sum 12.3 1700000001000
+request_duration_seconds_count 150 1700000001000
+# HELP memory_bytes Memory usage in bytes
+# TYPE memory_bytes gauge
+memory_bytes 1073741824 1700000000000
+memory_bytes 1073842176 1700000001000
+memory_bytes 1073942528 1700000002000
+memory_bytes 1073741824 1700000003000
+memory_bytes 1073841152 1700000004000
+# TYPE simple_counter counter
+simple_counter 0 1700000000000
+simple_counter 10 1700000001000
+simple_counter 25 1700000002000
+simple_counter 45 1700000003000
+simple_counter 70 1700000004000

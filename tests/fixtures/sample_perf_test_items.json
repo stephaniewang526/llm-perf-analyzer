@@ -1,0 +1,56 @@
+[
+  {
+    "info": {
+      "test_name": "api_read_load",
+      "trial": 0,
+      "args": {"concurrency": 128}
+    },
+    "created_at": "2026-04-03T14:22:14Z",
+    "completed_at": "2026-04-03T14:27:38Z",
+    "metrics": [
+      {
+        "name": "ops_per_sec",
+        "type": "THROUGHPUT",
+        "value": 2912.88,
+        "improvement_direction": "up"
+      },
+      {
+        "name": "average_read_latency_us",
+        "type": "MEAN",
+        "value": 43903.47,
+        "improvement_direction": "down"
+      },
+      {
+        "name": "95th_read_latency_us",
+        "type": "PERCENTILE_95TH",
+        "value": 105279.0,
+        "improvement_direction": "down"
+      }
+    ],
+    "sub_tests": []
+  },
+  {
+    "info": {
+      "test_name": "bulk_write_load",
+      "trial": 0,
+      "args": {"concurrency": 256}
+    },
+    "created_at": "2026-04-03T14:15:00Z",
+    "completed_at": "2026-04-03T14:22:00Z",
+    "metrics": [
+      {
+        "name": "ops_per_sec",
+        "type": "THROUGHPUT",
+        "value": 215847.89,
+        "improvement_direction": "up"
+      },
+      {
+        "name": "average_insert_latency_us",
+        "type": "MEAN",
+        "value": 1140.56,
+        "improvement_direction": "down"
+      }
+    ],
+    "sub_tests": []
+  }
+]
