@@ -26,13 +26,12 @@ from .metrics import (
 )
 from .polarity import (
     PolarityConfig,
-    get_polarity,
     is_priority,
     polarity_label,
     verdict,
 )
 
-SCHEMA_VERSION = "2.0"
+SCHEMA_VERSION = "1.0"
 
 
 def generate_summary_report(
@@ -118,10 +117,10 @@ def generate_comparison_report(
     _emit_comparison_metadata(lines, baseline_metadata, candidate_metadata)
     _emit_comparison_time_range(lines, baseline_metadata, candidate_metadata)
     _emit_verdict(lines, result, threshold)
-    _emit_regressions(lines, result["regressions"], threshold, top_n)
-    _emit_improvements(lines, result["improvements"], threshold, top_n)
+    _emit_regressions(lines, result["regressions"], top_n)
+    _emit_improvements(lines, result["improvements"], top_n)
     _emit_schema_changes(lines, result["baseline_only"], result["candidate_only"], result["shared_keys"])
-    _emit_stable_priority(lines, result["comparisons"], config, threshold)
+    _emit_stable_priority(lines, result["comparisons"], threshold)
     _emit_full_comparison(lines, result["significant"], threshold)
     _emit_data_sources(lines, candidate_metadata)
 
@@ -134,14 +133,14 @@ def generate_comparison_report(
 
 
 def _emit_schema_header(lines: list[str], report_type: str) -> None:
-    lines.append(f"# Performance Analysis Report")
+    lines.append("# Performance Analysis Report")
     lines.append("")
     lines.append("## Schema")
     lines.append("")
     lines.append("| Field | Value |")
     lines.append("|-------|-------|")
     lines.append(f"| schema_version | {SCHEMA_VERSION} |")
-    lines.append(f"| format | llm-perf-result |")
+    lines.append("| format | llm-perf-result |")
     lines.append(f"| report_type | {report_type} |")
     lines.append(f"| generated_at | {datetime.now(timezone.utc).isoformat()} |")
     lines.append("")
@@ -252,7 +251,7 @@ def _emit_verdict(lines: list[str], result: dict, threshold: float) -> None:
     lines.append("")
 
 
-def _emit_regressions(lines: list[str], regressions: list[dict], threshold: float, top_n: int) -> None:
+def _emit_regressions(lines: list[str], regressions: list[dict], top_n: int) -> None:
     if not regressions:
         return
     lines.append(f"## Regressions ({len(regressions)} metrics got worse)")
@@ -271,7 +270,7 @@ def _emit_regressions(lines: list[str], regressions: list[dict], threshold: floa
     lines.append("")
 
 
-def _emit_improvements(lines: list[str], improvements: list[dict], threshold: float, top_n: int) -> None:
+def _emit_improvements(lines: list[str], improvements: list[dict], top_n: int) -> None:
     if not improvements:
         return
     lines.append(f"## Improvements ({len(improvements)} metrics got better)")
@@ -325,7 +324,6 @@ def _emit_schema_changes(
 def _emit_stable_priority(
     lines: list[str],
     comparisons: list[dict],
-    config: PolarityConfig,
     threshold: float,
 ) -> None:
     stable = [

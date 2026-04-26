@@ -21,8 +21,11 @@ python3 analyze.py summary --adapter prometheus /path/to/metrics.txt
 python3 analyze.py compare baseline.json candidate.json
 
 # With a polarity config (teaches the tool which direction is "good")
-python3 analyze.py compare --polarity-config configs/web_app.yaml baseline.json candidate.json
+python3 analyze.py compare --polarity-config configs/web_app.yaml \
+  tests/fixtures/baseline.json tests/fixtures/candidate.json -o /tmp/compare.md
 ```
+
+Inspect the generated markdown for the **schema** header, **Overall Verdict** (in compare mode), and **Regressions** tables. For agent-oriented usage, see `SKILL.md`.
 
 ## What it does
 
@@ -148,24 +151,6 @@ python3 analyze.py compare <baseline> <candidate> [--adapter json|prometheus] [-
 | `--threshold` | 5.0 | Minimum % change to flag as significant |
 | `--top` | 50 | Max metrics per report section |
 | `-o` | stdout | Output file path |
-
-## Examples
-
-Uses only files in this repo (no network). After `pip install -r requirements.txt`:
-
-```bash
-# Summary on nested perf-test JSON
-python3 analyze.py summary tests/fixtures/sample_perf_test_items.json -o /tmp/summary.md
-
-# Baseline vs candidate with polarity config
-python3 analyze.py compare tests/fixtures/baseline.json tests/fixtures/candidate.json \
-  --polarity-config configs/web_app.yaml -o /tmp/compare.md
-
-# Prometheus exposition sample
-python3 analyze.py summary --adapter prometheus tests/fixtures/sample_prometheus.txt -o /tmp/prom.md
-```
-
-Inspect the generated markdown for the **schema** header, **Overall Verdict** (in compare mode), and **Regressions** tables. For agent-oriented usage, see `SKILL.md`.
 
 ## Agent skill
 
