@@ -113,7 +113,7 @@ def generate_comparison_report(
 
     lines: list[str] = []
 
-    _emit_schema_header(lines, "comparison")
+    _emit_schema_header(lines, "comparison", threshold=threshold)
     _emit_comparison_metadata(lines, baseline_metadata, current_metadata)
     _emit_comparison_time_range(lines, baseline_metadata, current_metadata)
     _emit_verdict(lines, result, threshold)
@@ -132,7 +132,16 @@ def generate_comparison_report(
 # ---------------------------------------------------------------------------
 
 
-def _emit_schema_header(lines: list[str], report_type: str) -> None:
+def _cov(stats: dict) -> str:
+    """Format coefficient of variation (stddev / mean * 100) as a string."""
+    mean = stats.get("mean", 0)
+    stddev = stats.get("stddev", 0)
+    if mean == 0:
+        return "N/A"
+    return f"{abs(stddev / mean) * 100:.1f}"
+
+
+def _emit_schema_header(lines: list[str], report_type: str, threshold: float | None = None) -> None:
     lines.append("# Performance Analysis Report")
     lines.append("")
     lines.append("## Schema")
@@ -143,6 +152,8 @@ def _emit_schema_header(lines: list[str], report_type: str) -> None:
     lines.append("| format | llm-perf-result |")
     lines.append(f"| report_type | {report_type} |")
     lines.append(f"| generated_at | {datetime.now(timezone.utc).isoformat()} |")
+    if threshold is not None:
+        lines.append(f"| threshold_pct | {threshold} |")
     lines.append("")
 
 
@@ -257,8 +268,8 @@ def _emit_regressions(lines: list[str], regressions: list[dict], top_n: int) -> 
         return
     lines.append(f"## Regressions ({len(regressions)} metrics got worse)")
     lines.append("")
-    lines.append("| Metric | Category | Baseline Mean | Current Mean | Change | P95 Chg |")
-    lines.append("|--------|----------|--------------|--------------|--------|---------|")
+    lines.append("| Metric | Category | Baseline Mean | Current Mean | Change | P95 Chg | B Samples | C Samples | B CoV% | C CoV% |")
+    lines.append("|--------|----------|--------------|--------------|--------|---------|-----------|-----------|--------|--------|")
     for c in regressions[:top_n]:
         cat = polarity_label(c["polarity"])
         lines.append(
@@ -266,7 +277,11 @@ def _emit_regressions(lines: list[str], regressions: list[dict], top_n: int) -> 
             f"| {format_number(c['baseline']['mean'])} "
             f"| {format_number(c['current']['mean'])} "
             f"| {c['mean_change_pct']:+.1f}% "
-            f"| {c['p95_change_pct']:+.1f}% |"
+            f"| {c['p95_change_pct']:+.1f}% "
+            f"| {c['baseline']['count']} "
+            f"| {c['current']['count']} "
+            f"| {_cov(c['baseline'])} "
+            f"| {_cov(c['current'])} |"
         )
     lines.append("")
 
@@ -276,8 +291,8 @@ def _emit_improvements(lines: list[str], improvements: list[dict], top_n: int) -
         return
     lines.append(f"## Improvements ({len(improvements)} metrics got better)")
     lines.append("")
-    lines.append("| Metric | Category | Baseline Mean | Current Mean | Change | P95 Chg |")
-    lines.append("|--------|----------|--------------|--------------|--------|---------|")
+    lines.append("| Metric | Category | Baseline Mean | Current Mean | Change | P95 Chg | B Samples | C Samples | B CoV% | C CoV% |")
+    lines.append("|--------|----------|--------------|--------------|--------|---------|-----------|-----------|--------|--------|")
     for c in improvements[:top_n]:
         cat = polarity_label(c["polarity"])
         lines.append(
@@ -285,7 +300,11 @@ def _emit_improvements(lines: list[str], improvements: list[dict], top_n: int) -
             f"| {format_number(c['baseline']['mean'])} "
             f"| {format_number(c['current']['mean'])} "
             f"| {c['mean_change_pct']:+.1f}% "
-            f"| {c['p95_change_pct']:+.1f}% |"
+            f"| {c['p95_change_pct']:+.1f}% "
+            f"| {c['baseline']['count']} "
+            f"| {c['current']['count']} "
+            f"| {_cov(c['baseline'])} "
+            f"| {_cov(c['current'])} |"
         )
     lines.append("")
 
@@ -351,8 +370,8 @@ def _emit_full_comparison(lines: list[str], significant: list[dict], threshold: 
     lines.append("<details><summary>Full comparison of all significant metrics</summary>")
     lines.append("")
     if significant:
-        lines.append("| Metric | Category | B Mean | C Mean | Change | Verdict | B P95 | C P95 | P95 Chg |")
-        lines.append("|--------|----------|--------|--------|--------|---------|-------|-------|---------|")
+        lines.append("| Metric | Category | B Mean | C Mean | Change | Verdict | B P95 | C P95 | P95 Chg | B n | C n | B CoV% | C CoV% |")
+        lines.append("|--------|----------|--------|--------|--------|---------|-------|-------|---------|-----|-----|--------|--------|")
         for c in significant:
             v = verdict(c, threshold)
             cat = polarity_label(c["polarity"])
@@ -364,7 +383,11 @@ def _emit_full_comparison(lines: list[str], significant: list[dict], threshold: 
                 f"| {v} "
                 f"| {format_number(c['baseline']['p95'])} "
                 f"| {format_number(c['current']['p95'])} "
-                f"| {c['p95_change_pct']:+.1f}% |"
+                f"| {c['p95_change_pct']:+.1f}% "
+                f"| {c['baseline']['count']} "
+                f"| {c['current']['count']} "
+                f"| {_cov(c['baseline'])} "
+                f"| {_cov(c['current'])} |"
             )
     lines.append("")
     lines.append("</details>")

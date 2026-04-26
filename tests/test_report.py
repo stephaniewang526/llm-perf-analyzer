@@ -107,6 +107,31 @@ class TestComparisonReport:
         assert "schema_version" in report
         assert "comparison" in report
 
+    def test_schema_header_includes_threshold(self, demo_config):
+        baseline = read_json(FIXTURES / "baseline.json")
+        current = read_json(FIXTURES / "current.json")
+        report = generate_comparison_report(
+            baseline["metrics"],
+            current["metrics"],
+            config=demo_config,
+            threshold=7.5,
+        )
+        assert "threshold_pct" in report
+        assert "7.5" in report
+
+    def test_regressions_include_sample_counts_and_cov(self, demo_config):
+        baseline = read_json(FIXTURES / "baseline.json")
+        current = read_json(FIXTURES / "current.json")
+        report = generate_comparison_report(
+            baseline["metrics"],
+            current["metrics"],
+            config=demo_config,
+        )
+        assert "B Samples" in report
+        assert "C Samples" in report
+        assert "B CoV%" in report
+        assert "C CoV%" in report
+
     def test_no_config_still_works(self):
         baseline = read_json(FIXTURES / "baseline.json")
         current = read_json(FIXTURES / "current.json")
