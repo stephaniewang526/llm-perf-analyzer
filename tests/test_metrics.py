@@ -6,12 +6,12 @@ import numpy as np
 import pytest
 
 from core.metrics import (
-    compute_rates,
+    compute_deltas,
     compute_stats,
     filter_sentinels,
     format_duration,
     format_number,
-    is_likely_counter,
+    is_monotonic_increasing,
     pct_change,
     percentile,
 )
@@ -71,49 +71,49 @@ class TestComputeStats:
         assert stats["stddev"] == 0.0
 
 
-class TestComputeRates:
-    def test_monotonic_counter(self):
+class TestComputeDeltas:
+    def test_monotonic_series(self):
         values = [0, 10, 25, 50, 100]
-        rates = compute_rates(values)
-        np.testing.assert_array_equal(rates, [10, 15, 25, 50])
+        deltas = compute_deltas(values)
+        np.testing.assert_array_equal(deltas, [10, 15, 25, 50])
 
-    def test_counter_reset_clamped_to_zero(self):
-        values = [100, 200, 50, 150]  # reset at index 2
-        rates = compute_rates(values)
-        np.testing.assert_array_equal(rates, [100, 0, 100])
+    def test_negative_delta_clamped_to_zero(self):
+        values = [100, 200, 50, 150]  # drop at index 2.
+        deltas = compute_deltas(values)
+        np.testing.assert_array_equal(deltas, [100, 0, 100])
 
     def test_single_value_returns_empty(self):
-        rates = compute_rates([42])
-        assert len(rates) == 0
+        deltas = compute_deltas([42])
+        assert len(deltas) == 0
 
     def test_empty_returns_empty(self):
-        rates = compute_rates([])
-        assert len(rates) == 0
+        deltas = compute_deltas([])
+        assert len(deltas) == 0
 
 
-class TestIsLikelyCounter:
+class TestIsMonotonicIncreasing:
     def test_known_prefix_match(self):
         values = list(range(100))
-        assert is_likely_counter(
+        assert is_monotonic_increasing(
             values,
-            known_counter_prefixes=["requests_total."],
+            known_prefixes=["requests_total."],
             key="requests_total.api",
         )
 
     def test_monotonic_heuristic(self):
         values = list(range(1000))
-        assert is_likely_counter(values)
+        assert is_monotonic_increasing(values)
 
     def test_non_monotonic_rejected(self):
         values = [10, 5, 8, 3, 7, 2, 9, 1, 6, 4] * 10
-        assert not is_likely_counter(values)
+        assert not is_monotonic_increasing(values)
 
     def test_too_few_samples(self):
-        assert not is_likely_counter([1, 2, 3])
+        assert not is_monotonic_increasing([1, 2, 3])
 
     def test_constant_values_rejected(self):
         values = [42] * 100
-        assert not is_likely_counter(values)
+        assert not is_monotonic_increasing(values)
 
 
 class TestPercentile:

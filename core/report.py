@@ -17,12 +17,12 @@ from typing import Any, Sequence
 
 from .compare import compare_metrics
 from .metrics import (
-    compute_rates,
+    compute_deltas,
     compute_stats,
     filter_sentinels,
     format_duration,
     format_number,
-    is_likely_counter,
+    is_monotonic_increasing,
 )
 from .polarity import (
     PolarityConfig,
@@ -420,7 +420,7 @@ def _compute_all_stats(
 
         counter = _is_counter(key, values, config, metric_types)
         if counter:
-            rate_values = compute_rates(values)
+            rate_values = compute_deltas(values)
             if len(rate_values) == 0:
                 continue
             s = compute_stats(rate_values)
@@ -444,6 +444,6 @@ def _is_counter(
     """Check whether a metric is a counter, preferring declared types."""
     if metric_types and key in metric_types:
         return metric_types[key] == "counter"
-    return is_likely_counter(
-        values, known_counter_prefixes=config.counter_prefixes, key=key
+    return is_monotonic_increasing(
+        values, known_prefixes=config.counter_prefixes, key=key
     )

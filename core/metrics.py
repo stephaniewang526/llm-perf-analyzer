@@ -1,8 +1,8 @@
 """
-Statistical computation for numeric metric data.
+Statistical computation for numeric data.
 
-All functions operate on generic numeric arrays -- no dependency on any
-specific observability system (Prometheus, custom JSON, etc.).
+All functions operate on generic numeric arrays with no dependency on any
+specific data source or observability system.
 """
 
 from __future__ import annotations
@@ -20,9 +20,9 @@ _NEGATIVE_SENTINEL = -(2**62)
 
 
 def filter_sentinels(values: Sequence[float]) -> np.ndarray:
-    """Remove sentinel values (near INT64_MAX) that would skew statistics."""
+    """Remove sentinel values (near INT64_MAX) and NaNs that would skew statistics."""
     arr = np.asarray(values, dtype=np.float64)
-    mask = (arr > _NEGATIVE_SENTINEL) & (arr < _SENTINEL_THRESHOLD)
+    mask = np.isfinite(arr) & (arr > _NEGATIVE_SENTINEL) & (arr < _SENTINEL_THRESHOLD)
     return arr[mask]
 
 
@@ -40,22 +40,25 @@ def compute_stats(values: Sequence[float]) -> dict | None:
     mean_val = float(np.mean(arr))
     stddev_val = float(np.std(arr, ddof=1)) if n > 1 else 0.0
 
+    p50, p95, p99 = np.percentile(arr, [50, 95, 99]).tolist()
+
     return {
         "count": n,
         "min": float(np.min(arr)),
         "max": float(np.max(arr)),
         "mean": mean_val,
-        "median": float(np.percentile(arr, 50)),
-        "p95": float(np.percentile(arr, 95)),
-        "p99": float(np.percentile(arr, 99)),
+        "median": p50,
+        "p95": p95,
+        "p99": p99,
         "stddev": stddev_val,
     }
 
 
-def compute_rates(values: Sequence[float]) -> np.ndarray:
-    """Compute per-sample deltas from cumulative counter values.
+def compute_deltas(values: Sequence[float]) -> np.ndarray:
+    """Compute per-sample deltas from a cumulative series.
 
-    Negative deltas (counter resets) are clamped to zero.
+    Negative deltas (e.g. counter resets) are clamped to zero.
+    Returns an empty array when fewer than two values are provided.
     """
     arr = np.asarray(values, dtype=np.float64)
     if len(arr) < 2:
@@ -65,24 +68,28 @@ def compute_rates(values: Sequence[float]) -> np.ndarray:
     return deltas
 
 
-def is_likely_counter(
+def is_monotonic_increasing(
     values: Sequence[float],
-    known_counter_prefixes: list[str] | None = None,
+    known_prefixes: list[str] | None = None,
     key: str | None = None,
+    min_samples: int = 10,
 ) -> bool:
-    """Determine whether a metric is a cumulative counter.
+    """Determine whether a series is monotonically non-decreasing.
 
-    If *key* is provided and matches any prefix in *known_counter_prefixes*,
-    returns True immediately. Otherwise uses a heuristic: monotonically
-    non-decreasing with a meaningful range.
+    If *key* is provided and matches any prefix in *known_prefixes*,
+    returns True immediately. Otherwise uses a heuristic: samples must
+    be non-decreasing and the last value must exceed the first.
+
+    *min_samples* controls the minimum number of data points required
+    for the heuristic check (default 10).
     """
-    if key and known_counter_prefixes:
-        for prefix in known_counter_prefixes:
+    if key and known_prefixes:
+        for prefix in known_prefixes:
             if key.startswith(prefix):
                 return True
 
     arr = np.asarray(values, dtype=np.float64)
-    if arr.size < 10:
+    if arr.size < min_samples:
         return False
     step = max(1, arr.size // 100)
     sampled = arr[::step]

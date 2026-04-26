@@ -41,8 +41,8 @@ The output is designed for LLM consumption: predictable sections, consistent tab
 
 ```
 Input Adapters (pluggable)        Core Engine (generic)              Output
-  json_adapter.py            -->  metrics.py   (stats)          --> Structured markdown
-  prometheus_adapter.py           polarity.py  (classification)     Structured markdown
+  json_adapter.py            -->  metrics.py   (stats)          -->  Structured markdown
+  prometheus_adapter.py           polarity.py  (classification)
   (future adapters)               compare.py   (regression detection)
                                   report.py    (report generator)
 ```

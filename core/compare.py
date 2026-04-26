@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from .metrics import compute_rates, compute_stats, filter_sentinels, pct_change
+from .metrics import compute_deltas, compute_stats, filter_sentinels, pct_change
 from .polarity import PolarityConfig, get_polarity, is_improvement, is_priority, is_regression
 
 
@@ -33,8 +33,8 @@ def build_comparison(
 
     metric_type = "gauge"
     if is_counter:
-        b_vals = compute_rates(b_vals)
-        c_vals = compute_rates(c_vals)
+        b_vals = compute_deltas(b_vals)
+        c_vals = compute_deltas(c_vals)
         if len(b_vals) == 0 or len(c_vals) == 0:
             return None
         metric_type = "counter (rate/s)"
@@ -88,7 +88,7 @@ def compare_metrics(
     Returns dict with keys: comparisons, significant, regressions,
     improvements, shared_keys, baseline_only, candidate_only.
     """
-    from .metrics import is_likely_counter
+    from .metrics import is_monotonic_increasing
 
     shared_keys = set(baseline) & set(candidate)
     baseline_only = set(baseline) - set(candidate)
@@ -105,10 +105,10 @@ def compare_metrics(
         if metric_types and key in metric_types:
             counter = metric_types[key] == "counter"
         else:
-            counter = is_likely_counter(
-                b_values, known_counter_prefixes=config.counter_prefixes, key=key
-            ) or is_likely_counter(
-                c_values, known_counter_prefixes=config.counter_prefixes, key=key
+            counter = is_monotonic_increasing(
+                b_values, known_prefixes=config.counter_prefixes, key=key
+            ) or is_monotonic_increasing(
+                c_values, known_prefixes=config.counter_prefixes, key=key
             )
 
         polarity = get_polarity(key, config)
