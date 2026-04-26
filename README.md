@@ -33,7 +33,7 @@ Inspect the generated markdown for the **schema** header, **Overall Verdict** (i
 2. **Computes** statistics: mean, median, p95, p99, stddev, min, max
 3. **Classifies** each metric's polarity: higher-is-better (throughput) vs lower-is-better (latency/cost)
 4. **Detects** regressions and improvements by comparing baseline vs current
-5. **Generates** a structured markdown report with schema version, tables, and verdicts
+5. **Generates** a structured markdown report with schema version, tables, verdicts, sample counts, and coefficient of variation for confidence assessment
 
 The output is designed for LLM consumption: predictable sections, consistent table formats, and explicit polarity annotations so the AI knows what "worse" means for each metric.
 
@@ -41,9 +41,9 @@ The output is designed for LLM consumption: predictable sections, consistent tab
 
 ```
 Input Adapters (pluggable)        Core Engine (generic)              Output
-  json_adapter.py            -->  metrics.py   (stats)          -->  Structured markdown
-  prometheus_adapter.py           polarity.py  (classification)
-  (future adapters)               compare.py   (regression detection)
+json_adapter.py            -->    metrics.py   (stats)          -->  Structured markdown
+prometheus_adapter.py             polarity.py  (classification)
+(future adapters)                 compare.py   (regression detection)
                                   report.py    (report generator)
 ```
 
@@ -73,9 +73,7 @@ counter_prefixes:
   - requests_total
 ```
 
-Example config in this repository:
-
-- `configs/web_app.yaml` -- typical HTTP / service metrics
+Example config in this repository: `configs/web_app.yaml` -- typical HTTP / service metrics
 
 Create your own by listing metric name prefixes under each category. First matching prefix wins.
 
@@ -148,7 +146,7 @@ python3 analyze.py compare <baseline> <current> [--adapter json|prometheus] [--p
 |---|---|---|
 | `--adapter` | json | Input format: `json` or `prometheus` |
 | `--polarity-config` | none | YAML file defining metric directions |
-| `--threshold` | 5.0 | Minimum % change to flag as significant |
+| `--threshold` | 5.0 | Minimum % change to flag as significant (embedded in report schema) |
 | `--top` | 50 | Max metrics per report section |
 | `-o` | stdout | Output file path |
 
