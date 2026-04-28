@@ -8,8 +8,8 @@ Most observability data -- Prometheus exports, JSON test results, diagnostic cap
 
 **Input**: two runs of raw metric arrays an LLM would otherwise have to eyeball:
 
-```json
-// baseline.json                          // current.json
+```text
+baseline_run.json                          current_run.json
 {                                          {
   "throughput.ops_per_sec": [1000, ...],     "throughput.ops_per_sec": [800, ...],
   "latency.p99_ms":         [50, ...],       "latency.p99_ms":         [71, ...],
@@ -17,7 +17,7 @@ Most observability data -- Prometheus exports, JSON test results, diagnostic cap
 }                                          }
 ```
 
-**Output** -- `analyze.py compare baseline.json current.json --polarity-config configs/web_app.yaml`:
+**Output**: `analyze.py compare baseline.json current.json --polarity-config configs/web_app.yaml`:
 
 ```markdown
 ## Overall Verdict
