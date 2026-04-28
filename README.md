@@ -4,6 +4,36 @@ Transform raw observability metrics into structured, LLM-consumable performance 
 
 Most observability data -- Prometheus exports, JSON test results, diagnostic captures -- is designed for human eyes, not for LLMs to analyze. This tool bridges that gap by computing statistics, classifying metric polarity, detecting regressions, and producing structured markdown reports that dramatically improve AI-assisted performance analysis.
 
+## See it in action
+
+**Input**: two runs of raw metric arrays an LLM would otherwise have to eyeball:
+
+```json
+// baseline.json                          // current.json
+{                                          {
+  "throughput.ops_per_sec": [1000, ...],     "throughput.ops_per_sec": [800, ...],
+  "latency.p99_ms":         [50, ...],       "latency.p99_ms":         [71, ...],
+  "cpu.percent":            [31, ...]        "cpu.percent":            [51, ...]
+}                                          }
+```
+
+**Output** -- `analyze.py compare baseline.json current.json --polarity-config configs/web_app.yaml`:
+
+```markdown
+## Overall Verdict
+- **Regressions**: 2 metrics got worse
+- **Improvements**: 0 metrics got better
+> **Action needed**: regressions detected in the current build.
+
+## Regressions (2 metrics got worse)
+| Metric                    | Category                       | Baseline | Current | Change |
+|---------------------------|--------------------------------|----------|---------|--------|
+| `latency.p99_ms`          | COST (lower is better)         | 51.40    | 71.40   | +38.9% |
+| `throughput.ops_per_sec`  | THROUGHPUT (higher is better)  | 1.0K     | 802.00  | -20.2% |
+```
+
+The LLM no longer has to compute averages, guess which direction is "better" or decide what counts as significant.
+
 ## Quick start
 
 ```bash
